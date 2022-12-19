@@ -29,7 +29,8 @@ namespace DependencyInjectionContainer
             object res=null;
             if (_configuration.Dependencies.Any(p =>
             {
-                return p.DependencyType == dependancy;
+                return (p.DependencyType == dependancy)||((dependancy.IsGenericType)&&(dependancy.GetGenericTypeDefinition()==p.DependencyType))
+                        ||(dependancy.IsGenericType && dependancy.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)));
             }))
             {
                 if (dependancy.IsGenericType && dependancy.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
@@ -39,7 +40,7 @@ namespace DependencyInjectionContainer
                     res = (TDep)typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(dependancy.GetGenericArguments()).Invoke(null, new object[] { temp });
                 }
                 else
-                    res = (TDep)(ResolveMany(dependancy).FirstOrDefault(r => r != null);
+                    res = (TDep)(ResolveMany(dependancy).FirstOrDefault(r => r != null));
             }
             else
             {
@@ -88,14 +89,14 @@ namespace DependencyInjectionContainer
                     {                        
                         if (c.SingletonImplementation==null)
                         {
-                            c.SingletonImplementation = GenerateObject(c.DependencyType);
+                            c.SingletonImplementation = GenerateObject(c.ImplementationType);
                         }
 
                         return c.SingletonImplementation;
                     }
                     else
                     {
-                        GenerateObject(c.ImplementationType);
+                        return GenerateObject(c.ImplementationType);
                     }
                 }
                 if (c.DependencyType.IsGenericTypeDefinition && type.IsGenericType && type.GetGenericTypeDefinition() == c.DependencyType)

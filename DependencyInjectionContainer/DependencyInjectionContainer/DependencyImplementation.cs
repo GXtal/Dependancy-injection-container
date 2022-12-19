@@ -32,6 +32,7 @@ namespace DependencyInjectionContainer
 
         public DependencyImplementation(Type dependency, Type implementation, bool isSingleton)
         {
+            locker = new object();
             DependencyType = dependency;
             ImplementationType = implementation;
             IsSingleton = isSingleton;
