@@ -2,16 +2,35 @@
 {
     public class DependenciesConfiguration
     {
-
+        public List<DependencyImplementation> Dependencies;
         public DependenciesConfiguration()
         {
-
+            Dependencies = new List<DependencyImplementation>();
         }
 
-        public void Register<TDep,TReal>()
+        public void Register<TDep,TImp>(object enumValue = default, bool isSingleton = false)
         {
-
+            ConfRegister(typeof(TDep), typeof(TImp), enumValue, isSingleton);
         }
 
+        private void ConfRegister(Type dependency, Type implementation, object enumValue, bool isSingleton = false)
+        {
+            List<DependencyImplementation> dependencies;
+                dependencies = Dependencies;
+
+            if (dependencies.Any(d => d.DependencyType == dependency && d.ImplementationType == implementation))
+            {
+                if (dependencies.Where(d => d.DependencyType == dependency && d.ImplementationType == implementation).First().IsSingleton == isSingleton)
+                    throw new ArgumentException("Такая зависимость уже определена");
+                
+            }
+            else
+            {
+                if (dependency.IsGenericType)
+                    dependency = dependency.GetGenericTypeDefinition();
+                var node = new DependencyImplementation(dependency, implementation, isSingleton);
+                dependencies.Add(node);
+            }
+        }
     }
 }
