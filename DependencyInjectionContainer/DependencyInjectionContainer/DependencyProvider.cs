@@ -85,7 +85,12 @@ namespace DependencyInjectionContainer
                 if (c.DependencyType == type)
                 {
                     if (c.IsSingleton)
-                    {
+                    {                        
+                        if (c.SingletonImplementation==null)
+                        {
+                            c.SingletonImplementation = GenerateObject(c.DependencyType);
+                        }
+
                         return c.SingletonImplementation;
                     }
                     else

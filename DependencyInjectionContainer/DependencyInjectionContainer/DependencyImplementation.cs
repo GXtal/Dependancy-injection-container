@@ -8,7 +8,21 @@ namespace DependencyInjectionContainer
 {
     public class DependencyImplementation
     {
-        public object SingletonImplementation { get; set; }
+        private object _singletone;
+        private object locker;
+        public object SingletonImplementation {
+            get
+            { 
+                lock(locker)
+                    return _singletone;
+                
+            }
+            set
+            {
+                lock(locker)
+                    _singletone = value;
+            }
+        }
 
         public Type DependencyType { get; }
 
