@@ -23,62 +23,97 @@ namespace DependencyInjectionContainer
                 return null;
         }
 
-        public TDep? Resolve<TDep>()
+        public TDep? Resolve<TDep>(object enumValue = default)
         {
-            Type dependancy = typeof(TDep);
+            Type dependency = typeof(TDep);
             object res=null;
-            if (_configuration.Dependencies.Any(p =>
+            List<DependencyImplementation> dependencies;
+            if (enumValue == null)
+                dependencies = _configuration.Dependencies;
+            else
             {
-                return (p.DependencyType == dependancy)||((dependancy.IsGenericType)&&(dependancy.GetGenericTypeDefinition()==p.DependencyType))
-                        ||(dependancy.IsGenericType && dependancy.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)));
-            }))
-            {
-                if (dependancy.IsGenericType && dependancy.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                if (!_configuration.EnumDependencies.ContainsKey(enumValue))
                 {
-                    var temp = ResolveMany(dependancy.GetGenericArguments().FirstOrDefault()).Where(r => r != null);
+                    return (TDep)GetDefaultValue(dependency);
+                }                    
+                else
+                    dependencies = _configuration.EnumDependencies[enumValue];
+            }
 
-                    res = (TDep)typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(dependancy.GetGenericArguments()).Invoke(null, new object[] { temp });
+            if (dependencies.Any(p =>
+            {
+                return (p.DependencyType == dependency)||((dependency.IsGenericType)&&(dependency.GetGenericTypeDefinition()==p.DependencyType))
+                        ||(dependency.IsGenericType && dependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)));
+            }
+            ))
+            {
+                if (dependency.IsGenericType && dependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                {
+                    var temp = ResolveMany(dependency.GetGenericArguments().FirstOrDefault(),enumValue).Where(r => r != null);
+
+                    res = (TDep)typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(dependency.GetGenericArguments()).Invoke(null, new object[] { temp });
                 }
                 else
-                    res = (TDep)(ResolveMany(dependancy).FirstOrDefault(r => r != null));
+                    res = (TDep)(ResolveMany(dependency, enumValue).FirstOrDefault(r => r != null));
             }
             else
             {
-                res=GetDefaultValue(dependancy);
+                res=GetDefaultValue(dependency);
             }            
             return (TDep)res;
         }
 
-        public object Resolve(Type dependancy)
+        public object Resolve(Type dependency, object enumValue = default)
         {
             object res = null;
-            if (_configuration.Dependencies.Any(p =>
+            List<DependencyImplementation> dependencies;
+            if (enumValue == null)
+                dependencies = _configuration.Dependencies;
+            else
             {
-                return p.DependencyType == dependancy;
-            }))
-            {
-                if (dependancy.IsGenericType && dependancy.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                if (!_configuration.EnumDependencies.ContainsKey(enumValue))
                 {
-                    var temp = ResolveMany(dependancy.GetGenericArguments().FirstOrDefault()).Where(r => r != null);
-
-                    res = typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(dependancy.GetGenericArguments()).Invoke(null, new object[] { temp });
+                    return GetDefaultValue(dependency);
                 }
                 else
-                    res = ResolveMany(dependancy).FirstOrDefault(r => r != null);
+                    dependencies = _configuration.EnumDependencies[enumValue];
+            }
+            if (dependencies.Any(p =>
+            {
+                return (p.DependencyType == dependency) || ((dependency.IsGenericType) && (dependency.GetGenericTypeDefinition() == p.DependencyType))
+                        || (dependency.IsGenericType && dependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)));
+            }))
+            {
+                if (dependency.IsGenericType && dependency.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+                {
+                    var temp = ResolveMany(dependency.GetGenericArguments().FirstOrDefault(), enumValue).Where(r => r != null);
+
+                    res = typeof(Enumerable).GetMethod("Cast").MakeGenericMethod(dependency.GetGenericArguments()).Invoke(null, new object[] { temp });
+                }
+                else
+                    res = ResolveMany(dependency, enumValue).FirstOrDefault(r => r != null);
             }
             else
             {
-                res = GetDefaultValue(dependancy);
+                res = GetDefaultValue(dependency);
             }
             return res;
         }
 
 
 
-        private IEnumerable<object?> ResolveMany(Type type)
+        private IEnumerable<object?> ResolveMany(Type type, object enumValue = default)
         {
             List<DependencyImplementation> dependencies;
-            dependencies = _configuration.Dependencies;
+            if (enumValue == null)
+                dependencies = _configuration.Dependencies;
+            else
+            {
+                if (!_configuration.EnumDependencies.ContainsKey(enumValue))
+                    return null;
+                else
+                    dependencies = _configuration.EnumDependencies[enumValue];
+            }
 
 
             return dependencies.Select(c =>
@@ -121,6 +156,12 @@ namespace DependencyInjectionContainer
 
             foreach(var param in cParams)
             {
+                if (param.GetCustomAttributes(false).Any(a => a is DependencyKeyAttribute))
+                {
+                    var enumValue = (param.GetCustomAttributes(false).FirstOrDefault(a => a is DependencyKeyAttribute) as DependencyKeyAttribute).enumValue;
+                    genParams.Add(Resolve(param.ParameterType, enumValue));
+
+                }else                
                 genParams.Add(Resolve(param.ParameterType));
             }
 

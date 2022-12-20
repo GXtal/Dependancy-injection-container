@@ -2,10 +2,12 @@
 {
     public class DependenciesConfiguration
     {
-        public List<DependencyImplementation> Dependencies;
+        public readonly List<DependencyImplementation> Dependencies;
+        public readonly Dictionary<object, List<DependencyImplementation>> EnumDependencies;
         public DependenciesConfiguration()
         {
             Dependencies = new List<DependencyImplementation>();
+            EnumDependencies = new Dictionary<object, List<DependencyImplementation>>();
         }
 
         public void Register<TDep,TImp>(object enumValue = default, bool isSingleton = false)
@@ -21,12 +23,24 @@
         private void ConfRegister(Type dependency, Type implementation, object enumValue, bool isSingleton = false)
         {
             List<DependencyImplementation> dependencies;
-                dependencies = Dependencies;
 
             if(!IsValid(dependency, implementation))
             {
                 throw new ArgumentException("создание невозможног соответсвия");
-            }    
+            }
+
+            if (enumValue == null)
+            {
+                dependencies = Dependencies;
+            }
+            else
+            {
+                if (!EnumDependencies.ContainsKey(enumValue))
+                {
+                    EnumDependencies.Add(enumValue, new List<DependencyImplementation>());
+                }
+                dependencies = EnumDependencies[enumValue];
+            }
 
 
             if (dependencies.Any(d => d.DependencyType == dependency && d.ImplementationType == implementation))
