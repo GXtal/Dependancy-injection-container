@@ -20,7 +20,13 @@ namespace DependencyInjectionContainer
             set
             {
                 lock(locker)
-                    _singletone = value;
+                {
+                    if (_singletone == null)
+                    {
+                        _singletone = value;
+                    }
+                }
+                    
             }
         }
 

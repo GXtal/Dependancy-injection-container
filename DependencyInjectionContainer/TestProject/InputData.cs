@@ -14,6 +14,21 @@ namespace TestProject
             Second
         }
 
+        public interface IService<TRepository> where TRepository : IRepository
+        {
+
+        }
+
+        public class ServiceImpl<TRepository> : IService<TRepository>
+                        where TRepository : IRepository
+        {
+            public TRepository Repository;
+            public ServiceImpl(TRepository repository)
+            {
+                Repository= repository;
+            }
+    
+        }
         public interface IService
         {
             public string GetName();
@@ -79,5 +94,7 @@ namespace TestProject
                 Interlocked.Increment(ref count);
             }
         }
+
+
     }
 }
